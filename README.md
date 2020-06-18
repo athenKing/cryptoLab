@@ -3,6 +3,6 @@
 Where to do crypto stuff
 
 
-* [vigenere](vigenere/README.md)
-* [rsa](rsa/README.md)
+* [vigenere](vigenere/)
+* [rsa](rsa/)
 * [ec](ec/README.md)
