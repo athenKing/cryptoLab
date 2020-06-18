@@ -45,7 +45,6 @@ def calcBloomSize(one_Bits,num_bits,num_slices):
 	return -num_bits/num_slices*(math.log(1-one_Bits/num_bits))
 
 union_partial=0
-intersection_partial =0
 
 aliceServer = Flask("aliceServer")
 @aliceServer.route('/onInit',methods=['GET'])
@@ -81,14 +80,6 @@ def onInit():
 
 	oneBits = bf.bitarray.count(True)
 
-	intersection_partial = aliceSizeEstimate - union_partial
-	if intersection_partial<0:
-		intersection_partial = PRIME - intersection_partial
-
-	# print(intersection_partial)
-	# print("alice secret is: ",npBool2Str(alice))
-	# print("Z1 is: ",Z1)
-
 	payload=json.dumps({'secureCoeffic':secureCoeffic,"mNumber":mNumber,"messages":messages,"mLen":mLen})
 	try:
 		r = requests.post(CONFIG["networkPort"]["iknpAlice"]+'onInit',json=payload)
@@ -103,11 +94,6 @@ def onGetUnionPartionVal():
 	return json.dumps({'partial':union_partial})
 
 
-# @aliceServer.route('/onGetIntersectionPartionVal',methods=['GET'])
-# def onGetIntersectionPartionVal():
-# 	global intersection_partial
-# 	return json.dumps({'partial':intersection_partial})
-	
 '''
 Input:  Prepared messages
 Output: None

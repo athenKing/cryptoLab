@@ -1,18 +1,15 @@
 import requests
 import json
 from bloom.pybloom import BloomFilter
-
+import numpy as np
+import random
+import math
 from parameters import CONFIG
 secureCoeffic = CONFIG["iknp"]["secureCoeffic"]
 PRIME = CONFIG["iknp"]["PRIME"]
 mLen = CONFIG["iknp"]["mLen"]
-
 bfCapacity=CONFIG["bloomFilterCapacity"]
 
-
-
-import numpy as np
-import random
 
 def npBool2Str(npBool):
 	cur = ''
@@ -33,14 +30,14 @@ def bitArray2npBool(bits):
 		ret[i] = bits[i]
 	return ret
 
-def calcBloomSize(one_Bits,num_bits,num_slices):
-	import math
-	return -num_bits/num_slices*(math.log(1-one_Bits/num_bits))
+def calcBloomSize(oneBits,num_bits,num_slices):
+	base = 1-1/num_bits
+	zeroBits = num_bits - oneBits
+	return round(math.log(zeroBits/num_bits,base)/num_slices)
 
 
 if __name__ == "__main__":
 	##selection to be Bob's original mLen choice bits
-	
 	try:
 		r = requests.get(CONFIG["networkPort"]["aliceServer"]+'onInit')
 	except:
@@ -51,8 +48,6 @@ if __name__ == "__main__":
 	bob = json.loads(fd.read())
 	fd.close()
 	bf = generateBloom(bob)
-
-	bobSizeEstimate = calcBloomSize(bf.bitarray.count(True),bf.num_bits,bf.num_slices)
 
 
 	bobSecrets = bitArray2npBool(bf.getBits())
@@ -81,10 +76,7 @@ if __name__ == "__main__":
 			print("why request encounters exception?")
 
 
-
-
 	union_partial=0
-	intersection_partial =bobSizeEstimate
 
 	result = None
 	try:
@@ -96,34 +88,9 @@ if __name__ == "__main__":
 	for e in result:
 		union_partial+=int(e,2)
 
-	intersection_partial-=union_partial
-	if intersection_partial<0:
-		intersection_partial = PRIME - intersection_partial
-
-	print(intersection_partial)
-
 
 	try:
 		r = requests.get(CONFIG["networkPort"]["aliceServer"]+'onGetUnionPartionVal')
 		print("The final union value is: ",round(calcBloomSize((union_partial+r.json()['partial'])%PRIME,bf.num_bits,bf.num_slices)))
 	except:
 		print("why request encounters exception?")
-
-
-	# try:
-	# r = requests.get(CONFIG["networkPort"]["aliceServer"]+'onGetIntersectionPartionVal')
-	# val = (intersection_partial+r.json()['partial'])%PRIME
-	# print(val)
-	# val = math.ceil(val)
-	# print(val)
-	# print("The final intersection value is: ",calcBloomSize(val,bf.num_bits,bf.num_slices))
-	# except:
-		# print("why request encounters exception?")
-
-
-
-
-
-	
-
-
