@@ -6,6 +6,8 @@ import requests
 import hashlib
 from flask import Flask,jsonify,request
 
+from networkConfig import NETWORK
+
 '''
 Below four functions are encoding decoding functions
 '''
@@ -85,7 +87,7 @@ class iknpBob:
 	def genMessageByRound(self,curRound):
 		payload=json.dumps({'m0':npBool2Str(self.M[curRound,0,:]),"m1":npBool2Str(self.M[curRound,1,:])})
 		try:
-			r = requests.post('http://0.0.0.0:8080/reset',json=payload)
+			r = requests.post('http://0.0.0.0:{}/reset'.format(NETWORK["baseOTSender"]),json=payload)
 		except:
 			print("Unknown Error!!")
 
@@ -139,7 +141,7 @@ def invokeBaseOT():
 	#After message reset,bob envoke alice to choose a secret bit here
 	payload=json.dumps({'choiceRound':curRound})
 	try:
-		r = requests.get('http://0.0.0.0:9000/evokeChoice',json=payload)
+		r = requests.get('http://0.0.0.0:{}/evokeChoice'.format(NETWORK["iknpAlice"]),json=payload)
 	except:
 		print("why request encounters exception?")
 
@@ -169,37 +171,4 @@ def onRecovery():
 	
 # seperate alice and bob in network configuration
 if __name__ == "__main__":
-	iknpBobEntity.run(host='0.0.0.0',port=9001)
-
-
-
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	iknpBobEntity.run(host='0.0.0.0',port=NETWORK["iknpBob"])

@@ -4,15 +4,14 @@ import math
 import numpy as np
 import random
 from parameters import CONFIG
-from bloom.pybloom import BloomFilter
+from pybloom import BloomFilter
 from flask import Flask,request
+from ot.networkConfig import NETWORK
 
 
 secureCoeffic = CONFIG["iknp"]["secureCoeffic"]
 PRIME = CONFIG["iknp"]["PRIME"]
 mLen = CONFIG["iknp"]["mLen"]
-
-
 bfCapacity=CONFIG["bloomFilterCapacity"]
 
 
@@ -59,11 +58,10 @@ def onInit():
 	aliceSizeEstimate = calcBloomSize(bf.bitarray.count(True),bf.num_bits,bf.num_slices)
 
 
-	alice = bitArray2npBool(bf.getBits())
+	alice = bitArray2npBool(bf.bitarray)
 	mNumber = len(alice)
 
 	# print("alice mNumber is: ",mNumber)
-
 	messages = []
 	for j in range(mNumber):
 		r = random.randrange(1,PRIME) 
@@ -77,26 +75,22 @@ def onInit():
 			pairs.append(bigInt2binStr(mLen,(PRIME-r+1)%PRIME))
 		union_partial += r
 		messages.append(pairs)
-
-	oneBits = bf.bitarray.count(True)
-
 	payload=json.dumps({'secureCoeffic':secureCoeffic,"mNumber":mNumber,"messages":messages,"mLen":mLen})
 	try:
-		r = requests.post(CONFIG["networkPort"]["iknpAlice"]+'onInit',json=payload)
+		r = requests.post('http://0.0.0.0:{}/onInit'.format(NETWORK["iknpAlice"]),json=payload)
 	except:
 		print("why request encounters exception?")
-
 	return r.text
+
 
 @aliceServer.route('/onGetUnionPartionVal',methods=['GET'])
 def onGetUnionPartionVal():
 	global union_partial
 	return json.dumps({'partial':union_partial})
 
-
 '''
 Input:  Prepared messages
 Output: None
 '''
 if __name__ == "__main__":
-	aliceServer.run(host='0.0.0.0',port=9002)
+	aliceServer.run(host='0.0.0.0',port=NETWORK["aliceServer"])

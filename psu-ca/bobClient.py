@@ -1,10 +1,13 @@
 import requests
 import json
-from bloom.pybloom import BloomFilter
+from pybloom import BloomFilter
 import numpy as np
 import random
 import math
 from parameters import CONFIG
+from ot.networkConfig import NETWORK
+
+
 secureCoeffic = CONFIG["iknp"]["secureCoeffic"]
 PRIME = CONFIG["iknp"]["PRIME"]
 mLen = CONFIG["iknp"]["mLen"]
@@ -38,10 +41,8 @@ def calcBloomSize(oneBits,num_bits,num_slices):
 
 if __name__ == "__main__":
 	##selection to be Bob's original mLen choice bits
-	try:
-		r = requests.get(CONFIG["networkPort"]["aliceServer"]+'onInit')
-	except:
-		print("Init networkPort::aliceServer onInit Error!")
+	
+	r = requests.get('http://0.0.0.0:{}/onInit'.format(NETWORK["aliceServer"]))
 
 
 	fd = open('data/bob.data', 'r')
@@ -50,47 +51,32 @@ if __name__ == "__main__":
 	bf = generateBloom(bob)
 
 
-	bobSecrets = bitArray2npBool(bf.getBits())
+	bobSecrets = bitArray2npBool(bf.bitarray)
 	mNumber = len(bobSecrets)
 
 	# print("bob mNumber is: ",mNumber)
-
 	secretStr = npBool2Str(bobSecrets)
 	payload=json.dumps({'secureCoeffic':secureCoeffic,"mNumber":mNumber,"bobSecrets":secretStr,"mLen":mLen})
 
-	try:
-		r = requests.post(CONFIG["networkPort"]["iknpBob"]+'onInit',json=payload)
-	except:
-		print("Init networkPort::aliceServer onInit Error!")
+	r = requests.post('http://0.0.0.0:{}/onInit'.format(NETWORK["iknpBob"]),json=payload)
 
-
+	print("Init aliceServer and iknpBob Successful!")
 	'''
 	TODO: Batch optimization
 	'''
 	for i in range(secureCoeffic):
 		payload=json.dumps({'choiceRound':i})
-		try:
-			r = requests.get(CONFIG["networkPort"]["iknpBob"]+'invokeBaseOT',json=payload)
-			# print(r.text)
-		except:
-			print("why request encounters exception?")
+		r = requests.get('http://0.0.0.0:{}/invokeBaseOT'.format(NETWORK["iknpBob"]),json=payload)
 
 
 	union_partial=0
 
 	result = None
-	try:
-		r = requests.get(CONFIG["networkPort"]["iknpBob"]+'onRecovery')
-		result = r.json()['finalMsg']
-	except:
-		print("why request encounters exception?")
+	r = requests.get('http://0.0.0.0:{}/onRecovery'.format(NETWORK["iknpBob"]))
+	result = r.json()['finalMsg']
 
 	for e in result:
 		union_partial+=int(e,2)
 
-
-	try:
-		r = requests.get(CONFIG["networkPort"]["aliceServer"]+'onGetUnionPartionVal')
-		print("The final union value is: ",round(calcBloomSize((union_partial+r.json()['partial'])%PRIME,bf.num_bits,bf.num_slices)))
-	except:
-		print("why request encounters exception?")
+	r = requests.get('http://0.0.0.0:{}/onGetUnionPartionVal'.format(NETWORK["aliceServer"]))
+	print("The final union value is: ",round(calcBloomSize((union_partial+r.json()['partial'])%PRIME,bf.num_bits,bf.num_slices)))

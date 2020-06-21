@@ -7,6 +7,7 @@ import hashlib
 from flask import Flask,jsonify,request
 
 
+from networkConfig import NETWORK
 '''
 Below four functions are encoding decoding functions
 '''
@@ -144,7 +145,7 @@ def evokeChoice():
 		payload=json.dumps({'matrixY':Ystr})
 
 		try:
-			r = requests.post('http://0.0.0.0:9001/onSetBobMatrix',json=payload)
+			r = requests.post('http://0.0.0.0:{}/onSetBobMatrix'.format(NETWORK["iknpBob"]),json=payload)
 		except:
 			print("why request encounters exception?")
 
@@ -155,7 +156,7 @@ def evokeChoice():
 
 
 if __name__ == "__main__":
-    iknpAliceEntity.run(host='0.0.0.0',port=9000)
+    iknpAliceEntity.run(host='0.0.0.0',port=NETWORK["iknpAlice"])
 
 
 	

@@ -1,98 +1,84 @@
-import random
-from flask import Flask,jsonify,request
 import requests
-from RabinMiller import genPrime,primRoots
 import json
-import ast
-import logging
-from common.number import gen_prime
-#Setting up the server
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-app = Flask(__name__)
+from common.ds import genFlajoletMartin
+from parameters import CONFIG
+import random
+from flask import Flask,request,jsonify
+from ot.networkConfig import NETWORK
 
-fm = ''
-G=5
-P=0
-#last round random numbers
-RO,R1=0,0
-FS=''
+wLen =  CONFIG["DongLou"]["wLen"]
+PRIME =  CONFIG["DongLou"]["PRIME"]
+mLen =  CONFIG["DongLou"]["mLen"]
 
+FS=None
+PARTIALSUM =0
+LASTR0=None
 
-@app.route('/interact/<int:roundNum')
-def onInteract(roundNum):
-    global fm
-    if roundNum == 1:
-        r0 = random.randrange(1,P)
-        r1 = 1+P-r0
-    else:
-        if R0 & 1:#odd number
-            if FS[roundNum-1] ==0:
-                
+SENDER = Flask("fmSender")
+@SENDER.route('/onInit',methods=['GET'])
+def onInit():
+	global FS,PARTIALSUM,PRIME,wLen,LASTR0
 
+	fd = open('data/alice.data', 'r')
+	alice = json.loads(fd.read())
+	fd.close()
 
-#Handle initial request
-@app.route('/')
-def main():
-    global prime
-    global g
-    #Generate the shared prime and generator
-    prime = genPrime(40)
-    print("The generated prime is ",prime)
-    g = random.randint(2,100)
-    print("The generator to be used is ",g,'\n')
-    #Share the prime and generator
-    return jsonify({'prime':prime,'generator':g})
+	FS = genFlajoletMartin(alice,wLen)
+	PARTIALSUM = 0
 
-#Handle calchash request
-@app.route('/priv')
-def priv():
-    global x
-    global X
-    #Calculate the private factor
-    x = random.randint(2,100)
-    print('The private factor to be used by sender is ',x,'\n')
-    X = pow(g, x, prime)
-    #Calculate and return the public exponent
-    print('The public exponent is ',X,'\n')
-    return jsonify({'public':X})
+    #Step 1:execuate OT(1,2) once
+	r = random.randrange(1,PRIME)
+	r0 = (PRIME-r)%PRIME
+	r1= (PRIME-r+1)%PRIME
 
-#Handle the final request
-@app.route('/enc',methods=['GET'])
-def enc():
-    global Y
-    data = ast.literal_eval((request.data).decode('utf-8'))
-    #Obtain the public factor
-    Y = int(data['Public'])
-    print('Recieved public factor is ',Y,'\n')
-    #Calculate and create the hash of the two keys
-    key0 = str(pow(Y, x, prime)).encode("utf-8")
-    key1 = str(pow(int(Y/X), x, prime)).encode("utf-8")
-    key_hashed_0 = encrypt.getHash(key0)
-    print('Hash of Key 1 calculated')
-    key_hashed_1 = encrypt.getHash(key1)
-    print('Hash of Key 2 calculated\n')
-    #Encrypt both the messages and return to the reciever
-    cipher_0 = encrypt.cipher(key_hashed_0, m0)
-    print('Cipher of message 1 calculated')
-    cipher_1 = encrypt.cipher(key_hashed_1, m1)
-    print('Cipher of message 2 calculated\n')
-    print('Waiting for receiver\n')
-    return jsonify({'cipher_0':cipher_0.decode("utf-8"),'cipher_1':cipher_1.decode("utf-8")})
+	PARTIALSUM += r
+	LASTR0 = r0
+
+	if FS[0] == '0':
+		payload=json.dumps({'m0':str(r0),"m1":str(r1)})
+	else:
+		payload=json.dumps({'m0':str(r1),"m1":str(r1)})
+	r = requests.post('http://0.0.0.0:{}/reset'.format(NETWORK["baseOTSender"]),json=payload)
+	return "success"
 
 
-def initiateGroup(keysize):
-    global P
-    P = gen_prime(keysize)
+#Step 2:execuate enough OT(1,4) several times
+@SENDER.route('/onOthers',methods=['GET'])
+def onOthers():
+	global FS,PARTIALSUM,PRIME,wLen,LASTR0,mLen
 
-def startSender(input):
-    global FS
-    FS = input
+	data = json.loads(request.get_json())
+	curRound = data['round']
 
-    initiateGroup(1024)
+	r = random.randrange(1,PRIME)
+	r0 = (PRIME-r)%PRIME
+	r1= (PRIME-r+1)%PRIME
 
-    m0 = str(input('Enter the first message to be sent\n'))
-    m1 = str(input('Enter the second message to be sent\n'))
-    print('Waiting for receiver\n')
-    #Start the server
-    app.run(host='0.0.0.0',port=8080)
+	PARTIALSUM+= r
+	if FS[curRound]=='0':
+		if LASTR0%2 == 0:
+			messages = [r0,r0,r0,r1]
+		else:
+			messages = [r0,r1,r0,r0]
+	else:
+		if LASTR0%2 == 0:
+			messages = [r0,r0,r1,r1]
+		else:
+			messages = [r1,r1,r0,r0]
+
+	LASTR0 = r0
+	payload={}
+	payload["mLen"] = mLen
+	payload["messages"] = messages
+	payload["number"] = len(messages)
+	r = requests.post('http://0.0.0.0:{}/onInit'.format(NETWORK["otExtSender"]),json=json.dumps(payload))
+	return "success"
+
+#Step 3:return this partial value to the other party
+@SENDER.route('/onGetFinal',methods=['GET'])
+def onGetFinal():
+	global PARTIALSUM
+	return jsonify({"partial":PARTIALSUM})
+
+if __name__ == "__main__":
+    SENDER.run(host='0.0.0.0',port=NETWORK["fmSender"])
