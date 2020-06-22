@@ -20,7 +20,6 @@ class GeneralOTReceiver:
 			self.initiate(i,int(b))
 
 
-
 	def initiate(self,curRound,choice):
 		r = requests.get('http://0.0.0.0:{}/onSelect'.format(NETWORK["otExtSender"]),json=json.dumps({"round":curRound}))
 
@@ -30,11 +29,8 @@ class GeneralOTReceiver:
 
 
 	def final(self):
-
 		decrypt = self.encrypted[int(self.choice,2)]
-
 		for v in self.choiceKeys:
-
 			decrypt ^= v
 
 		return decrypt

@@ -9,7 +9,7 @@ kill_process()
 		  echo "killing $val"
 		  kill -9 $PID
 		else
-		  echo "$val is not running"
+		  echo "$val process unfound"
 		fi
 	done
 }

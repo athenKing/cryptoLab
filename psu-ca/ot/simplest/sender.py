@@ -7,8 +7,6 @@ Call order
 from flask import Flask,jsonify,request
 import hashlib,random
 from gmpy2 import powmod
-# from common.encode import bits2int
-# import requests
 import json
 import ast
 
@@ -16,8 +14,6 @@ import ast
 # import logging
 # log = logging.getLogger('werkzeug')
 # log.setLevel(logging.ERROR)
-def bits2int(bits):
-	return int.from_bytes(bits,byteorder="big")
 
 def enc(key,message):
 	key = int(key)
@@ -27,7 +23,7 @@ def enc(key,message):
 
 
 	m = bytes("prefix"+message,"utf-8")
-	m = bits2int(m)
+	m = int.from_bytes(m,byteorder="big")
 
 	# m = int(message,2)
 

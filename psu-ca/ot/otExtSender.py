@@ -23,7 +23,7 @@ def int2str(intLen,Integer):
 def genKeyPairs(length,keyLen):
 	import random
 	right =  (1<<length) -1
-	left = (1<<length -1)
+	left = 1<<(length -1)
 	pairs=[]
 	for i in range(keyLen):
 		pair = []

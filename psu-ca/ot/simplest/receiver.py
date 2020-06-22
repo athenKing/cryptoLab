@@ -17,7 +17,8 @@ def int2bits(x):
 	length = len(str(hex(x)))-2
 	if length%2 == 1:
 		length+=1
-	length//=2
+	# length//=2
+	length>>=1
 
 	bits = x.to_bytes(length,byteorder="big")
 	return bits
