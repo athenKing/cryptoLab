@@ -5,5 +5,6 @@ NETWORK = {
 
 	"aliceServer":9002,
 	"otExtSender":10000,
-	"fmSender":10001
+	"fmSender":10001,
+	"otEcSender":10002
 }
