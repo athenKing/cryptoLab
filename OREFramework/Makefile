@@ -1,8 +1,8 @@
 CC = clang
-INCPATHS = -I/usr/local/Cellar/openssl@1.1/1.1.1d/include -I/usr/local/Cellar/gmp/6.1.2_2/include
+INCPATHS = -I/usr/local/opt/openssl@1.1/include
 CFLAGS = -g -Wall -O3 $(INCPATHS) -march=native
 LDLIBS = -lgmp -lssl -lcrypto
-LDPATH = -L/usr/local/Cellar/gmp/6.1.2_2/lib -L/usr/local/Cellar/openssl@1.1/1.1.1d/lib
+LDPATH = -L/usr/local/opt/openssl@1.1/lib
 BUILD = build
 
 
