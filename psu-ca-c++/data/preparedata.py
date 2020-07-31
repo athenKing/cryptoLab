@@ -19,7 +19,6 @@ for i in range(total):
 		alice.append( ele )
 		aliceDict[ele] = 1
 
-
 for i in range(7*total):
 	ele = random.randint(0, 5*total)
 	if ele not in bobDict:
